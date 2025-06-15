@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Story App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Quicksand:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #232526, #414345 100%);
+            min-height: 100vh;
+            font-family: 'Quicksand', Arial, sans-serif;
+            color: #fff;
+            margin: 0;
+        }
+        #container {
+            max-width: 700px;
+            margin: 48px auto 0 auto;
+            background: rgba(255,255,255,0.10);
+            border-radius: 22px;
+            box-shadow: 0 4px 28px 0 rgba(40, 40, 70, 0.18);
+            padding: 48px 32px 40px 32px;
+            min-height: 400px;
+            position: relative;
+        }
+        h1 {
+            font-family: 'Montserrat', Arial, sans-serif;
+            font-size: 2.3rem;
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #ffb347, #00c9a7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #progress-bar-bg {
+            width: 100%;
+            background: #333a;
+            border-radius: 8px;
+            height: 14px;
+            margin: 0 0 18px 0;
+            overflow: hidden;
+        }
+        #progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ffb347, #00c9a7);
+            width: 0%;
+            transition: width 0.6s cubic-bezier(.4,1.2,.4,1);
+        }
+        #story-image {
+            width: 100%;
+            max-width: 360px;
+            display: block;
+            margin: 0 auto 18px auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px 0 rgba(60,80,120,0.13);
+            object-fit: cover;
+            aspect-ratio: 4/3;
+            opacity: 0;
+            transition: opacity 0.7s;
+        }
+        #story-image.visible {
+            opacity: 1;
+        }
+        #story-text {
+            font-size: 1.2rem;
+            margin-bottom: 28px;
+            line-height: 1.7;
+            min-height: 90px;
+            padding: 16px 18px;
+            background: rgba(0,0,0,0.14);
+            border-radius: 12px;
+            box-shadow: 0 1px 8px 0 rgba(0,0,0,0.09);
+            transition: background 0.3s, opacity 0.6s;
+            opacity: 0;
+        }
+        #story-text.visible {
+            opacity: 1;
+        }
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 17px;
+            margin-top: 10px;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.6s;
+        }
+        .choices.visible {
+            opacity: 1;
+        }
+        .choice-btn, .restart-btn, .end-btn {
+            font-family: 'Montserrat', Arial, sans-serif;
+            background: linear-gradient(90deg, #ffb347, #00c9a7);
+            color: #232526;
+            border: none;
+            border-radius: 11px;
+            padding: 14px 30px;
+            font-size: 1.13rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 10px 0 rgba(255, 179, 71, 0.09);
+            transition: background 0.22s, color 0.1s, transform 0.13s;
+            outline: none;
+        }
+        .choice-btn:focus-visible, .restart-btn:focus-visible, .end-btn:focus-visible {
+            outline: 2px solid #00c9a7;
+        }
+        .choice-btn:hover, .restart-btn:hover, .end-btn:hover {
+            background: linear-gradient(90deg, #00c9a7, #ffb347);
+            color: #fff;
+            transform: scale(1.04);
+        }
+        .restart-btn {
+            background: linear-gradient(90deg, #e36c6c, #fbbf24);
+            color: #fff;
+        }
+        .end-btn {
+            background: linear-gradient(90deg, #000, #6ee7b7);
+            color: #fff;
+        }
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 350px;
+            animation: fadeIn 1s;
+        }
+        #start-btn {
+            margin-top: 36px;
+            font-family: 'Montserrat', Arial, sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ffb347, #00c9a7);
+            color: #232526;
+            border: none;
+            border-radius: 15px;
+            padding: 22px 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px 0 rgba(255, 179, 71, 0.11);
+            transition: background 0.23s, color 0.16s, transform 0.18s;
+        }
+        #start-btn:hover, #start-btn:focus {
+            background: linear-gradient(90deg, #00c9a7, #ffb347);
+            color: #fff;
+            transform: scale(1.06);
+        }
+        #name-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 22px;
+        }
+        #name-input {
+            font-size: 1.13rem;
+            padding: 9px 15px;
+            border-radius: 8px;
+            border: 1px solid #bbb;
+            margin-bottom: 14px;
+            outline: none;
+            font-family: 'Quicksand', Arial, sans-serif;
+        }
+        #name-input:focus {
+            border: 1.8px solid #00c9a7;
+        }
+        #sound {
+            display:none;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @media (max-width: 700px) {
+            #container { padding: 18px 2vw 20px 2vw; }
+            #story-image { max-width: 98vw; }
+            #start-btn { padding: 16px 14vw; font-size: 1.1rem; }
+            #name-input { width: 70vw; }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1 id="story-title">Interactive Story App</h1>
+        <div id="progress-bar-bg" aria-hidden="true"><div id="progress-bar"></div></div>
+        <div id="start-screen">
+            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" alt="Enchanted Forest" style="max-width: 320px; border-radius: 14px; margin-bottom: 12px; box-shadow: 0 4px 24px 0 rgba(60,80,120,0.11)">
+            <div id="story-select" style="margin-bottom:18px;">
+                <label for="story-choice" style="font-size:1.12rem;">Choose your story:</label>
+                <select id="story-choice" style="font-size:1.1rem; margin-top:7px; border-radius:7px; padding:7px;">
+                    <option value="enchantedQuest">The Enchanted Quest</option>
+                    <option value="spaceOdyssey">Space Odyssey</option>
+                </select>
+            </div>
+            <form id="name-form" autocomplete="off">
+                <label for="name-input" style="font-size:1.12rem;">What's your name, adventurer?</label>
+                <input id="name-input" name="name" type="text" maxlength="18" required placeholder="Enter your name" />
+                <button id="start-btn" type="submit">Start Story</button>
+            </form>
+        </div>
+        <img id="story-image" src="" alt="Scene" />
+        <div id="story-text" aria-live="polite"></div>
+        <div class="choices" id="choices"></div>
+        <audio id="sound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9a4b82.mp3" preload="auto"></audio>
+    </div>
+    <script>
+    // MULTI-STORY DATA
+    const STORIES = {
+        enchantedQuest: {
+            title: "The Enchanted Quest",
+            start: {
+                text: (name) => `Welcome, ${name || "adventurer"}! You awaken at the edge of the Enchanted Forest. Legend says a hidden crystal keeps peace in the land. Will you seek it?`,
+                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Enter the forest", next: "forestEntry" },
+                    { text: "Turn back to the village", next: "villageEnd" }
+                ]
+            },
+            forestEntry: {
+                text: (name) => `You step beneath the canopy, ${name || "adventurer"}. Two paths appear: a dark, tangled thicket, and a sunlit clearing where fireflies dance.`,
+                image: "https://images.unsplash.com/photo-1465101178521-c1a9136a3c8b?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Explore the thicket", next: "thicket" },
+                    { text: "Head to the clearing", next: "clearing" }
+                ]
+            },
+            villageEnd: {
+                text: (name) => `${name || "You"} return to the village. Life is calm, but you always wonder what adventure you missed...`,
+                image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            thicket: {
+                text: () => "In the thicket, you find a wounded fox entangled in brambles.",
+                image: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Help the fox", next: "helpFox" },
+                    { text: "Ignore and search ahead", next: "ignoreFox" }
+                ]
+            },
+            helpFox: {
+                text: () => "You free and tend to the fox. It transforms into a spirit, gifting you a glowing key and vanishing with a grateful bow. You hear a mysterious melody deeper in the woods.",
+                image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Follow the melody", next: "melody" },
+                    { text: "Return to the path", next: "clearing" }
+                ]
+            },
+            ignoreFox: {
+                text: () => "You ignore the fox and march deeper. The woods darken, and you get lost. The story ends in wandering silence.",
+                image: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            melody: {
+                text: () => "Following the melody, you find a circle of elves dancing around a silver pond. They invite you to join.",
+                image: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Join the dance", next: "dance" },
+                    { text: "Thank them and move on", next: "clearing" }
+                ]
+            },
+            dance: {
+                text: () => "You join the dance, feeling light as air. Time blurs. When you stop, the elves gift you a feather that grants safe passage through danger.",
+                image: "https://images.unsplash.com/photo-1465101178521-c1a9136a3c8b?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Continue on your quest", next: "clearing" }
+                ]
+            },
+            clearing: {
+                text: () => "A fairy hovers by a great oak with a door. 'Only the wise may enter,' she says. A riddle appears: 'What is always coming but never arrives?'",
+                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Answer: Tomorrow", next: "doorOpens" },
+                    { text: "Try the glowing key", next: "useKey" },
+                    { text: "Show the magical feather", next: "featherEntry" },
+                    { text: "Force the door", next: "forceDoor" }
+                ]
+            },
+            doorOpens: {
+                text: () => "The oak door opens! Inside, the crystal floats on a pedestal. As you touch it, the forest glows and cheers. You're a hero!",
+                image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            useKey: {
+                text: () => "The key fits! The door opens to a magical library filled with living books. One book flutters to you, offering secrets of the world.",
+                image: "https://images.unsplash.com/photo-1465101178521-c1a9136a3c8b?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Read the book", next: "bookEnding" },
+                    { text: "Take the crystal and leave", next: "crystalLeave" }
+                ]
+            },
+            featherEntry: {
+                text: () => "The fairy sees your feather and nods. 'You have friends among the elves. Enter safely.' Inside, you find both the crystal and a mysterious locked box.",
+                image: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Open the box", next: "openBox" },
+                    { text: "Take only the crystal", next: "crystalLeave" }
+                ]
+            },
+            openBox: {
+                text: () => "Inside the box is a star-shaped gem. The fairy gasps: 'It's the lost Star of Wisdom! Now you may wish for peace, knowledge, or adventure.'",
+                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Wish for peace", next: "wishPeace" },
+                    { text: "Wish for knowledge", next: "wishKnowledge" },
+                    { text: "Wish for adventure", next: "wishAdventure" }
+                ]
+            },
+            wishPeace: {
+                text: () => "A gentle breeze spreads through the land. The forest, village, and all creatures live in harmony forever. You are remembered as the bringer of peace.",
+                image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            wishKnowledge: {
+                text: () => "Your mind fills with the wisdom of ages. You become the greatest storyteller ever known, sharing tales from the Enchanted Forest to distant lands.",
+                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            wishAdventure: {
+                text: () => "The world shifts and new paths open before you. Your adventures become legend, and your name is forever etched in the heart of magic.",
+                image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            bookEnding: {
+                text: () => "The book shares stories of courage and friendship. You leave wiser, bringing tales back to your people. The forest remains forever open to you.",
+                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            crystalLeave: {
+                text: () => "You take the crystal, feeling its warmth. Outside, the world flourishes. You are remembered as a legendary adventurer.",
+                image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            forceDoor: {
+                text: () => "You try to force the door. The fairy sighs. Vines gently push you away. The lesson: wisdom, not force, opens enchanted doors.",
+                image: "https://images.unsplash.com/photo-1465101178521-c1a9136a3c8b?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            }
+        },
+        spaceOdyssey: {
+            title: "Space Odyssey",
+            start: {
+                text: (name) => `Welcome, ${name || "explorer"}! You awaken on a starship bound for the Andromeda galaxy. Suddenly, alarms blare. Will you investigate the bridge or check the engine room?`,
+                image: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Go to the bridge", next: "bridge" },
+                    { text: "Check the engine room", next: "engineRoom" }
+                ]
+            },
+            bridge: {
+                text: () => "On the bridge, you find the captain missing and a cryptic message on the screen.",
+                image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Decode the message", next: "decode" },
+                    { text: "Search for the captain", next: "searchCaptain" }
+                ]
+            },
+            decode: {
+                text: () => "You decode the message: 'Beware the black hole. Trust the AI.'",
+                image: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Consult the AI", next: "ai" },
+                    { text: "Ignore and set course", next: "blackHole" }
+                ]
+            },
+            searchCaptain: {
+                text: () => "You find the captain in the medbay, unconscious but alive.",
+                image: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Wake the captain", next: "wakeCaptain" },
+                    { text: "Consult the AI", next: "ai" }
+                ]
+            },
+            wakeCaptain: {
+                text: () => "The captain warns you: 'The AI is compromised!'",
+                image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Trust the captain", next: "manualControl" },
+                    { text: "Trust the AI", next: "ai" }
+                ]
+            },
+            ai: {
+                text: () => "The AI suggests a safe route around the black hole. Do you follow?",
+                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Follow AI's route", next: "safeArrival" },
+                    { text: "Override and go manual", next: "manualControl" }
+                ]
+            },
+            manualControl: {
+                text: () => "You take manual control. The ship shakes violently but you steer clear of danger. The crew hails you as a hero.",
+                image: "https://images.unsplash.com/photo-1465101178521-c1a9136a3c8b?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            safeArrival: {
+                text: () => "You arrive safely at your destination. The AI congratulates you and the crew celebrates a new beginning.",
+                image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            blackHole: {
+                text: () => "You set course for the black hole. The ship is pulled in and lost forever. The story ends in darkness.",
+                image: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            },
+            engineRoom: {
+                text: () => "In the engine room, you find a strange device pulsing with energy.",
+                image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=600&q=80",
+                choices: [
+                    { text: "Deactivate the device", next: "deactivate" },
+                    { text: "Leave it alone", next: "bridge" }
+                ]
+            },
+            deactivate: {
+                text: () => "You deactivate the device. The alarms stop. The crew thanks you for saving the ship.",
+                image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=80",
+                choices: [],
+                ending: true
+            }
+        }
+    };
+
+    // DOM Elements
+    const startScreen = document.getElementById('start-screen');
+    const nameForm = document.getElementById('name-form');
+    const nameInput = document.getElementById('name-input');
+    const storyImg = document.getElementById('story-image');
+    const storyText = document.getElementById('story-text');
+    const choicesDiv = document.getElementById('choices');
+    const progressBar = document.getElementById('progress-bar');
+    const sound = document.getElementById('sound');
+    const storyChoice = document.getElementById('story-choice');
+    const storyTitle = document.getElementById('story-title');
+    let playerName = "";
+    let pathNodes = [];
+    let currentNode = "start";
+    let STORY = STORIES["enchantedQuest"]; // default
+
+    function playSound() {
+        sound.currentTime = 0;
+        sound.play();
+    }
+
+    function speak(text) {
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const utter = new window.SpeechSynthesisUtterance(text);
+        utter.rate = 1.04;
+        utter.pitch = 1.07;
+        utter.volume = 1;
+        utter.lang = "en-US";
+        window.speechSynthesis.speak(utter);
+    }
+
+    function setProgress() {
+        let percent = Math.min(100, 20 + (pathNodes.length / 6) * 80);
+        if (pathNodes[pathNodes.length - 1] && STORY[pathNodes[pathNodes.length - 1]].ending) percent = 100;
+        progressBar.style.width = percent + "%";
+    }
+
+    function fadeIn(element) { element.classList.add("visible"); }
+    function fadeOut(element) { element.classList.remove("visible"); }
+
+    function renderStory(nodeKey, isRestart = false) {
+        currentNode = nodeKey;
+        const node = STORY[nodeKey];
+        if (!isRestart) pathNodes.push(nodeKey);
+        setProgress();
+
+        // Update image
+        storyImg.classList.remove("visible");
+        storyImg.src = node.image;
+        setTimeout(() => fadeIn(storyImg), 50);
+
+        // Update text
+        fadeOut(storyText);
+        setTimeout(() => {
+            const text = typeof node.text === "function" ? node.text(playerName) : node.text;
+            storyText.innerHTML = text;
+            fadeIn(storyText);
+            speak(text);
+        }, 200);
+
+        // Choices
+        fadeOut(choicesDiv);
+        setTimeout(() => {
+            choicesDiv.innerHTML = "";
+            if (node.choices && node.choices.length > 0) {
+                node.choices.forEach((choice, i) => {
+                    const btn = document.createElement('button');
+                    btn.textContent = choice.text;
+                    btn.className = 'choice-btn';
+                    btn.tabIndex = 0;
+                    btn.setAttribute('aria-label', choice.text);
+                    btn.onclick = () => {
+                        playSound();
+                        renderStory(choice.next);
+                    };
+                    btn.onkeyup = (e) => { if (e.key === "Enter" || e.key === " ") btn.click(); };
+                    choicesDiv.appendChild(btn);
+                });
+                // Add End button for user to exit at any point
+                const endBtn = document.createElement('button');
+                endBtn.textContent = "End Story";
+                endBtn.className = 'end-btn';
+                endBtn.onclick = () => showStart();
+                endBtn.tabIndex = 0;
+                choicesDiv.appendChild(endBtn);
+            } else if (node.ending) {
+                // Ending node
+                const endBtn = document.createElement('button');
+                endBtn.textContent = "End";
+                endBtn.className = 'end-btn';
+                endBtn.onclick = () => showStart();
+                endBtn.tabIndex = 0;
+                choicesDiv.appendChild(endBtn);
+
+                const restartBtn = document.createElement('button');
+                restartBtn.textContent = "Restart Story";
+                restartBtn.className = 'restart-btn';
+                restartBtn.onclick = () => {
+                    playSound();
+                    pathNodes = [];
+                    renderStory('start', true);
+                };
+                restartBtn.tabIndex = 0;
+                choicesDiv.appendChild(restartBtn);
+            }
+            fadeIn(choicesDiv);
+        }, 200);
+    }
+
+    function showStart() {
+        window.speechSynthesis && window.speechSynthesis.cancel();
+        pathNodes = [];
+        startScreen.style.display = "flex";
+        storyImg.style.display = "none";
+        storyText.style.display = "none";
+        choicesDiv.style.display = "none";
+        progressBar.style.width = "0%";
+        nameInput.value = "";
+        playerName = "";
+        // Reset story title
+        storyTitle.textContent = STORIES[storyChoice.value].title;
+    }
+
+    // Start screen logic
+    nameForm.onsubmit = function(e) {
+        e.preventDefault();
+        playerName = nameInput.value.trim() || "Adventurer";
+        STORY = STORIES[storyChoice.value];
+        storyTitle.textContent = STORY.title;
+        startScreen.style.display = "none";
+        storyImg.style.display = "block";
+        storyText.style.display = "block";
+        choicesDiv.style.display = "flex";
+        pathNodes = [];
+        renderStory('start');
+    };
+
+    // Update title on story change
+    storyChoice.onchange = function() {
+        storyTitle.textContent = STORIES[storyChoice.value].title;
+    };
+
+    // Hide story before start
+    storyImg.style.display = "none";
+    storyText.style.display = "none";
+    choicesDiv.style.display = "none";
+
+    // Accessibility: Focus on first choice button after rendering
+    const observer = new MutationObserver(() => {
+        const firstBtn = choicesDiv.querySelector("button");
+        if (firstBtn) firstBtn.focus();
+    });
+    observer.observe(choicesDiv, { childList: true });
+
+    // Keyboard navigation for choices
+    document.addEventListener('keydown', function(e){
+        if (!choicesDiv.classList.contains("visible")) return;
+        const buttons = Array.from(choicesDiv.querySelectorAll("button"));
+        if (!buttons.length) return;
+        let idx = buttons.indexOf(document.activeElement);
+        if (e.key === "ArrowDown" || e.key === "Tab") {
+            e.preventDefault();
+            buttons[(idx+1)%buttons.length].focus();
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            buttons[(idx-1+buttons.length)%buttons.length].focus();
+        }
+    });
+    </script>
+</body>
+</html>
